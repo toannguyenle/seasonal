@@ -27,12 +27,58 @@
       <div
         class     ="fixed way-way-above tl whole-width whole-height"
         on-resize ="
-          stage.stageWidth  = width;
-          stage.stageHeight = height;
+          stage.width  = width;
+          stage.height = height;
+        "
+        ng-init ="stage.objectTypes = [ {
+          label: 'Cloud',
+          image: 'http://olen.tongal.com/v2/images/twilight/easter-egg/bg-cloud-2.png'
+        }, {
+          label: 'Tree',
+          image: 'http://olen.tongal.com/v2/images/twilight/easter-egg/fg-tree.png'
+        }, {
+          label: 'Bush',
+          image: 'http://olen.tongal.com/v2/images/twilight/easter-egg/bush.png'
+        } ]"
+        ng-mousedown ="stage.modifyingObject = null;"
+        ng-mouseup   ="stage.movingObject = null"
+        ng-mousemove ="
+          left   = $event.pageX - stage.offsetLeft;
+          bottom = ( stage.height - $event.pageY ) - stage.offsetBottom;
+
+          stage.movingObject.left   = left   / stage.width;
+          stage.movingObject.bottom = bottom / stage.height;
+
+          stage.movingObject && $event.preventDefault();
         "
       >
-        <div class="h1 default-text-coloring mostly-transparent">
-          Here's where the stage objects will go!
+        <div
+          ng-repeat ="objectType in stage.objectTypes"
+          ng-init   ="stage[ objectType.label ] = stage[ objectType.label ] || []"
+        >
+          <img
+            class     ="absolute block sheer-coloring-when-hovered"
+            ng-repeat ="object in stage[ objectType.label ]"
+            ng-src    ="{{ objectType.image }}"
+            ng-style  ="{
+              width  : object.width + '%',
+              left   : ( object.left - object.width / 100 / 2 ) * 100 + '%',
+              bottom : object.bottom * 100 + '%',
+              opacity: object.opacity / 100
+            }"
+            ng-mousedown ="
+              stage.modifyingObject = object;
+              stage.movingObject    = object;
+              stage.offsetLeft      = $event.pageX - object.left * stage.width;
+              stage.offsetBottom    = ( stage.height - $event.pageY ) - object.bottom * stage.height;
+              $event.stopPropagation();
+            "
+            ng-class ="{
+              'rounded hover': stage.modifyingObject === object,
+              'blurred'      : object.blurred == 'blurred',
+              'less-blurred' : object.blurred == 'less-blurred'
+            }"
+          />
         </div>
       </div>
 
@@ -50,9 +96,60 @@
           class ="t-animate slow wipe-max-height typical-block with-scale"
           ng-if ="stage.editingStage"
         >
-          <div class="h1 default-text-coloring mostly-transparent">
-            Here's where some stage editing controls will go!
+
+          <div
+            ng-repeat ="objectType in stage.objectTypes"
+            ng-if     ="stage.modifyingObject && ( objectIndex = stage[ objectType.label ].indexOf( stage.modifyingObject ) ) != -1"
+          >
+
+            <div class="inline-block less padded margin rounded sheer-coloring">
+              Width: <input
+                type      ="range"
+                min       ="1"
+                max       ="33"
+                ng-model  ="stage.modifyingObject.width"
+              />
+            </div>
+
+            <div class="inline-block less padded margin rounded sheer-coloring">
+              Opacity: <input
+                type      ="range"
+                min       ="1"
+                max       ="100"
+                ng-model  ="stage.modifyingObject.opacity"
+              />
+            </div>
+
+            <div class="inline-block less padded margin rounded sheer-coloring">
+              <select
+                ng-model   ="stage.modifyingObject.blurred"
+                ng-options ="option for option in [ 'blurred', 'less-blurred' ]"
+              >
+                <option value="">Blurring Class</option>
+              </select>
+            </div>
+
+            <div class="less padded margin rounded sheer-coloring">
+              <a
+                class    ="inline-block p line-height-sized text-center whole-rounded negative-button fa fa-times"
+                ng-click ="stage[ objectType.label ].splice( objectIndex, 1 )"
+              ></a>: {{ stage.modifyingObject }}
+            </div>
+
           </div>
+
+          <a
+            ng-repeat ="objectType in stage.objectTypes"
+            class     ="inline-block positive-button fast less padded margin"
+            ng-click  ="stage[ objectType.label ].push( {
+              width  : 5,
+              left   : .4,
+              bottom : .35,
+              opacity: 100
+            } );"
+          >
+            Add {{ objectType.label }}
+          </a>
         </div>
 
       </div>
